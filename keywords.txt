@@ -1,0 +1,35 @@
+###########################################
+# Syntax Coloring Map For I2CCHARDISPLAY
+###########################################
+
+###########################################
+# Datatypes (KEYWORD1)
+###########################################
+
+I2CCHARDISPLAY	KEYWORD1
+
+###########################################
+# Methods and Functions (KEYWORD2)
+###########################################
+begin	KEYWORD2
+clear	KEYWORD2
+home	KEYWORD2
+cursorMove	KEYWORD2
+displayOff	KEYWORD2
+displayOn	KEYWORD2
+cursorBlinkOff	KEYWORD2
+cursorBlinkOn	KEYWORD2
+cursorOff	KEYWORD2
+cursorOn	KEYWORD2
+displayShiftLeft	KEYWORD2
+displayShiftRight	KEYWORD2
+cursorShiftLeft	KEYWORD2
+cursorShiftRight	KEYWORD2
+displayLeftToRight	KEYWORD2
+displayRightToLeft	KEYWORD2
+displayShiftOn	KEYWORD2
+displayShiftOff	KEYWORD2
+createCharacter	KEYWORD2
+###########################################
+# Constants (LITERAL1)
+###########################################
