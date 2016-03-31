@@ -30,3 +30,5 @@ A demo program (in the examples folder) works with Arduino and Particle (Photon,
 * [Library installation and usage](http://wht.io/portfolio/i2c-display-library/)
 * [OLED hardware information](http://wht.io/portfolio/i2c-oled-backpack-board/)
 * [LCD hardware information](http://wht.io/portfolio/i2c-lcd-backpack-board/)
+
+**See LICENSE.md for license information.**
