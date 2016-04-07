@@ -9,7 +9,10 @@
   Written by: Gary Muhonen  gary@wht.io
 
   versions
-    1.0.0 - original    3/19/2016
+    1.0.0 - 3/19/2016
+      Original Release.
+    1.0.1 - 4/6/2016
+      Modified the cursorMove() description.
 
     Short Description:
       This library works with Arduino and Particle (Photon, Electron, and Core)
@@ -33,7 +36,8 @@
       Project Details:
 
       * Library installation and usage: http://wht.io/portfolio/i2c-display-library/
-      * OLED hardware information: http://wht.io/portfolio/i2c-oled-backpack-board/
+      * OLED hardware information for EastRising modules: http://wht.io/portfolio/i2c-oled-backpack-board-eastrising/
+      * OLED hardware information for Newhaven modules: http://wht.io/portfolio/i2c-oled-backpack-board-newhaven/
       * LCD hardware information: http://wht.io/portfolio/i2c-lcd-backpack-board/
 */
 
@@ -140,9 +144,9 @@ public:
 
   I2cCharDisplay(uint8_t displayType, uint8_t i2cAddress, uint8_t rows); // creates a display object
   void begin();                                                      // required to inialize the display. run this first!
-  void clear();                                                      // clear the display and home the cursor to 0,0
-  void home();                                                       // move the cursor to home position (0,0)
-  void cursorMove(uint8_t row, uint8_t col);                         // move cursor to position row,col (positions start at 0)
+  void clear();                                                      // clear the display and home the cursor to 1,1
+  void home();                                                       // move the cursor to home position (1,1)
+  void cursorMove(uint8_t row, uint8_t col);                         // move cursor to position row,col (positions start at 1)
   void displayOff();                                                 // turns off the entire display
   void displayOn();                                                  // turns on the entire display
   void cursorBlinkOff();                                             // turns off the blinking block cursor

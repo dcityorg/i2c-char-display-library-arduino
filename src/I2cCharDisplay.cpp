@@ -9,7 +9,13 @@
   Written by: Gary Muhonen  gary@wht.io
 
   versions
-    1.0.0 - original    3/19/2016
+    1.0.0 - 3/19/2016
+      Original Release.
+    1.0.1 - 4/6/2016
+      Modified the cursorMove() function to start at (1,1) instead of (0,0).
+      Modified the cursorMove() function to work with OLED modules correctly.
+      Modified the home() function to work with the newly modified cursorMove().
+      Modified the oledBegin() function to work with the Newhaven OLED modules.
 
   Short Description:
     This library works with Arduino and Particle (Photon, Electron, and Core)
@@ -33,7 +39,8 @@
     Project Details:
 
     * Library installation and usage: http://wht.io/portfolio/i2c-display-library/
-    * OLED hardware information: http://wht.io/portfolio/i2c-oled-backpack-board/
+    * OLED hardware information for EastRising modules: http://wht.io/portfolio/i2c-oled-backpack-board-eastrising/
+    * OLED hardware information for Newhaven modules: http://wht.io/portfolio/i2c-oled-backpack-board-newhaven/
     * LCD hardware information: http://wht.io/portfolio/i2c-lcd-backpack-board/
 */
 
@@ -129,22 +136,39 @@ void I2cCharDisplay::clear()
 
 void I2cCharDisplay::home()
 {
-  cursorMove(0, 0);    // use move command instead to avoid flicker on oled displays
+  cursorMove(1, 1);    // use move command instead to avoid flicker on oled displays
   //  sendCommand(LCD_RETURNHOMECOMMAND); // move cursor to home
   //  delayMicroseconds(2000);            // 1.53ms required
 }
 
 
-// move cursor to new postion row,col  (both start at 0)
+// move cursor to new postion row,col  (both start at 1)
 void I2cCharDisplay::cursorMove(uint8_t row, uint8_t col)
 {
-  int moveRowOffse[] = { 0x00, 0x40, 0x14, 0x54 };
 
-  if (row >= _rows)
+  if (row > _rows)              // if user points to a row too large, change row to the bottom row
   {
-    row = _rows - 1;                // row starts at 0, point to the last row
+    row = _rows;
   }
-  sendCommand(LCD_SETDDRAMADDRCOMMAND | (col + moveRowOffse[row]));
+
+  if (_rows <= 2)               // if we have a 1 or 2 row display
+  {
+    uint8_t moveRowOffset2Rows[] =  { 0x00, 0x40};
+    sendCommand(LCD_SETDDRAMADDRCOMMAND | (col-1 + moveRowOffset2Rows[row-1]));
+  }
+  else                          // if we have a 3 or 4 line display
+  {
+    if (_displayType == LCD_TYPE)           // if using an LCD
+    {
+      uint8_t moveRowOffset4RowsLcd[] =  { 0x00, 0x40, 0x14, 0x54 };
+      sendCommand(LCD_SETDDRAMADDRCOMMAND | (col-1 + moveRowOffset4RowsLcd[row-1]));
+    }
+    else                                    // if using an OLED
+    {
+      uint8_t moveRowOffset4RowsOled[] = { 0x00, 0x20, 0x40, 0x60 };
+      sendCommand(LCD_SETDDRAMADDRCOMMAND | (col-1 + moveRowOffset4RowsOled[row-1]));
+    }
+  }
 }
 
 
@@ -440,53 +464,61 @@ void I2cCharDisplay::oledBegin()
 
   // begin OLED setup
   sendCommand(0x2A); // Set RE bit (RE=1, IS=0, SD=0)
+
   sendCommand(0x71); // Function Selection A
-  sendCommand(0x5C); // turn on Vcc
+  sendData(0x5C);    // 5C = enable regulator (for 5V I/O), 00 = disable regulator (for 3.3V I/O)
+                     //      Leave at 5C and then you can operate at either 3.3 or 5 volts.
+                     //      The current draw of the regulator is minimal
 
   sendCommand(0x28); // Clear RE bit (RE=0, IS=0, SD=0)
-  sendCommand(0x08); // Sleep Mode On (display, cursor & blink are off)
+
+  sendCommand(0x08); // Sleep Mode On (display, cursor & blink are off) during this setup
 
   sendCommand(0x2A); // Set RE bit (RE=1, IS=0, SD=0)
   sendCommand(0x79); // Set SD bit (RE=1, IS=0, SD=1)
+
   sendCommand(0xD5); // Set Display Clock Divide Ratio/ Oscillator Frequency
   sendCommand(0x70); //     set the Freq to 70h
 
   sendCommand(0x78); // Clear SD bit (RE=1, IS=0, SD=0)
-  sendCommand(0x72); // Function Selection B:
-  sendCommand(0x00); //       ROM A and CGRAM 8
 
+  // Extended Function Set:
+    if (_rows > 2)
+    {
+      sendCommand(0x09); // Set 5x8 chars, display inversion cleared, 3/4 line display
+    }
+    else
+    {
+      sendCommand(0x08); // Set 5x8 chars, cursor inversion cleared, 1/2 line display
+    }
+
+  sendCommand(0x06); // Set Advanced Entry Mode: COM0 -> COM31, SEG99 -> SEG0
+
+  sendCommand(0x72); // Function Selection B:
+  sendData(0x00);    //    Select ROM A and CGRAM 8 (which allows for custom characters)
 
   sendCommand(0x79); // Set SD bit  (RE=1, IS=0, SD=1)
+
   sendCommand(0xDA); // Set SEG Pins Hardware Configuration:
   sendCommand(0x10); //      Enable SEG Left, Seq SEG pin config
+
+  sendCommand(0xDC); // Function Selection C
+  sendCommand(0x00); //   Internal VSL, GPIO pin HiZ, input disabled
 
   sendCommand(0x81); // Set Contrast (brightness)
   sendCommand(0xFF); //       max value = 0xFF
 
-  sendCommand(0xDB); // Set VCOM Deselect Level:
-  sendCommand(0x30); //      0.83 x Vcc
+  sendCommand(0xD9); // Set Phase Length
+  sendCommand(0xF1); //       Phase 2 = 15(F), Phase 1 = 1   (power on = 0x78)
 
-  sendCommand(0xDC); // Function Selection C:
-  sendCommand(0x03); //       Internal VSL (POR), GPIO pin output high
+  sendCommand(0xDB); // set VCOMH deselect Level
+  sendCommand(0x40); //       1 x Vcc  (previously 0x30)
 
   // Done with OLED Setup
 
   sendCommand(0x78);    // Clear SD bit  (RE=1, IS=0, SD=0)
   sendCommand(0x28);    // Clear RE and IS (RE=0, IS=0, SD=0)
-  sendCommand(0x2A);    // Set RE bit  (RE=1, IS=0, SD=0)
 
-  sendCommand(0x06);    // Set Advanced Entry Mode: COM0 -> COM31, SEG99 -> SEG0
-//  sendCommand(0x08);    // Extended Function Set: 5Dot, BW inversion of cursor OFF, 1/2 line display
-// Extended Function Set:
-  if (_rows > 2)
-  {
-    sendCommand(0x09); // Set 5x8 chars, display inversion cleared, 3/4 line display
-  }
-  else
-  {
-    sendCommand(0x08); // Set 5x8 chars, cursor inversion cleared, 1/2 line display
-  }
-  sendCommand(0x28);   // Clear RE and IS  (RE=0, IS=0, SD=0)
   sendCommand(0x01);   // clear display
   sendCommand(0x80);   // Set DDRAM Address to 0x80 (line 1 start)
 

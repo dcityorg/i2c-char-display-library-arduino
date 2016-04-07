@@ -9,7 +9,10 @@
   Written by: Gary Muhonen  gary@wht.io
 
   versions
-    1.0.0 - original    3/19/2016
+    1.0.0 - 3/19/2016
+      Original release.
+    1.0.1 - 4/6/2016
+      changed the cursorMove() commands to start at 1,1 (instead of 0,0)
 
   Short Description:
     This demo program works with Arduino and Particle (Photon, Electron, and Core)
@@ -33,7 +36,8 @@
     Project Details:
 
     * Library installation and usage: http://wht.io/portfolio/i2c-display-library/
-    * OLED hardware information: http://wht.io/portfolio/i2c-oled-backpack-board/
+    * OLED hardware information for EastRising modules: http://wht.io/portfolio/i2c-oled-backpack-board-eastrising/
+    * OLED hardware information for Newhaven modules: http://wht.io/portfolio/i2c-oled-backpack-board-newhaven/
     * LCD hardware information: http://wht.io/portfolio/i2c-lcd-backpack-board/
 */
 
@@ -141,13 +145,13 @@ void loop()
     lcd.print("Cursor Move");
     oled.print("Cursor Move");
     delay(1000);
-    lcd.cursorMove(1, 0);
-    oled.cursorMove(1, 0);
+    lcd.cursorMove(2, 1);
+    oled.cursorMove(2, 1);
     lcd.print("12345");
     oled.print("12345");
     delay(1000);
-    lcd.cursorMove(1, 8);
-    oled.cursorMove(1, 8);
+    lcd.cursorMove(2, 9);
+    oled.cursorMove(2, 9);
     delay(1000);
     lcd.print("12345");
     oled.print("12345");
@@ -185,14 +189,14 @@ void loop()
   oled.cursorBlinkOn();
   for (uint8_t i = 0; i < TESTNUM; ++i)
   {
-    lcd.cursorMove(1, 6);
-    oled.cursorMove(1, 6);
+    lcd.cursorMove(2, 7);
+    oled.cursorMove(2, 7);
     delay(1000);
     lcd.print("12345");
     oled.print("12345");
     delay(1000);
-    lcd.cursorMove(1, 6);
-    oled.cursorMove(1, 6);
+    lcd.cursorMove(2, 7);
+    oled.cursorMove(2, 7);
     delay(1000);
     lcd.print("67890");
     oled.print("67890");
@@ -207,8 +211,8 @@ void loop()
   oled.clear();
   lcd.print("Cursor On/Off");
   oled.print("Cursor On/Off");
-  lcd.cursorMove(1, 6);
-  oled.cursorMove(1, 6);
+  lcd.cursorMove(2, 7);
+  oled.cursorMove(2, 7);
   for (uint8_t i = 0; i < TESTNUM; ++i)
   {
     lcd.cursorOn();
@@ -261,8 +265,8 @@ void loop()
   oled.print("Cursor Shift L/R");
   lcd.cursorOn();
   oled.cursorOn();
-  lcd.cursorMove(1, 6);
-  oled.cursorMove(1, 6);
+  lcd.cursorMove(2, 7);
+  oled.cursorMove(2, 7);
   for (uint8_t i = 0; i < TESTNUM; ++i)
   {
     lcd.cursorShiftLeft();
@@ -300,8 +304,8 @@ void loop()
     oled.clear();
     lcd.print("Display L -> R");
     oled.print("Display  L -> R");
-    lcd.cursorMove(1, 6);
-    oled.cursorMove(1, 6);
+    lcd.cursorMove(2, 7);
+    oled.cursorMove(2, 7);
     lcd.print("12345");
     oled.print("12345");
     delay(2000);
@@ -311,8 +315,8 @@ void loop()
     oled.print("Display  R -> L");
     lcd.displayRightToLeft();
     oled.displayRightToLeft();
-    lcd.cursorMove(1, 6);
-    oled.cursorMove(1, 6);
+    lcd.cursorMove(2, 7);
+    oled.cursorMove(2, 7);
     lcd.print("12345");
     oled.print("12345");
     delay(2000);
@@ -331,8 +335,8 @@ void loop()
     delay(2000);
     lcd.displayShiftOn();
     oled.displayShiftOn();
-    lcd.cursorMove(1, 8);
-    oled.cursorMove(1, 8);
+    lcd.cursorMove(2, 9);
+    oled.cursorMove(2, 9);
     for (uint8_t i = 0; i < 8; ++i)
     {
       lcd.print(i);
@@ -347,8 +351,8 @@ void loop()
     lcd.print("Disp Shift Off");
     oled.print("Disp Shift Off");
     delay(2000);
-    lcd.cursorMove(1, 8);
-    oled.cursorMove(1, 8);
+    lcd.cursorMove(2, 9);
+    oled.cursorMove(2, 9);
     for (uint8_t i = 0; i < 8; ++i)
     {
       lcd.print(i);
@@ -409,8 +413,8 @@ void loop()
     delay(200);
     lcd.print("Custom Chars");
     oled.print("Custom Chars");
-    lcd.cursorMove(1, 2);
-    oled.cursorMove(1, 2);
+    lcd.cursorMove(2, 3);
+    oled.cursorMove(2, 3);
     lcd.write(0);
     oled.write(0);
     delay(200);
@@ -448,14 +452,14 @@ void loop()
   oled.clear();
   lcd.print("Printing Numbers");
   oled.print("Printing Numbers");
-  lcd.cursorMove(1, 0);               // move to 2nd line
-  oled.cursorMove(1, 0);
+  lcd.cursorMove(2, 1);               // move to 2nd line
+  oled.cursorMove(2, 1);
   lcd.print("x=");
   lcd.print(x, 2);                    // print 1 decimal places
   oled.print("x=");
   oled.print(x, 2);
-  lcd.cursorMove(1, 8);
-  oled.cursorMove(1, 8);
+  lcd.cursorMove(2, 9);
+  oled.cursorMove(2, 9);
   lcd.print("j=");
   lcd.print(j, HEX);                  // print in hex
   oled.print("j=");
@@ -467,14 +471,14 @@ void loop()
   oled.clear();
   lcd.print("Printing Numbers");
   oled.print("Printing Numbers");
-  lcd.cursorMove(1, 0);               // move to 2nd line
-  oled.cursorMove(1, 0);
+  lcd.cursorMove(2, 1);               // move to 2nd line
+  oled.cursorMove(2, 1);
   lcd.print("x=");
   lcd.print(x, 1);                    // print 1 decimal places
   oled.print("x=");
   oled.print(x, 1);
-  lcd.cursorMove(1, 8);
-  oled.cursorMove(1, 8);
+  lcd.cursorMove(2, 9);
+  oled.cursorMove(2, 9);
   lcd.print("j=");
   lcd.print(j, DEC);                  // print in hex
   oled.print("j=");
