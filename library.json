@@ -14,7 +14,7 @@
     "type": "git",
     "url": "https://github.com/wht-io/i2c-display-library.git"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "examples": [
     "examples/*/*.ino"
   ],

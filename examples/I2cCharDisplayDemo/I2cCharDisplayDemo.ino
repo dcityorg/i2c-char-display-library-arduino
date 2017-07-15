@@ -12,7 +12,16 @@
     1.0.0 - 3/19/2016
       Original release.
     1.0.1 - 4/6/2016
-      changed the cursorMove() commands to start at 1,1 (instead of 0,0)
+      Modified the cursorMove() function to start at (1,1) instead of (0,0).
+      Modified the cursorMove() function to work with OLED modules correctly.
+      Modified the home() function to work with the newly modified cursorMove().
+      Modified the oledBegin() function to work with the Newhaven OLED modules.
+    1.0.2 - 4/17/2017
+      Added a second class constructor (with additional parameter i2cPort),
+        so that the user could specify which i2c port to use (0 or 1)
+        Port 0 is the main i2c port using pins (SDA and SCL).
+        Port 1 is the aux i2c port using pins (SDA1 and SCL1, e.g. on an Arduino DUE board).
+        This adds support for the Arduino DUE board (using either of it's i2c ports).
 
   Short Description:
     This demo program works with Arduino and Particle (Photon, Electron, and Core)
@@ -47,12 +56,15 @@
 */
 
 
-#ifdef ARDUINO_ARCH_AVR         // if using an arduino
-#include <I2cCharDisplay.h>
-#include <Wire.h>
-#elif SPARK                     // if using a core, photon, or electron (by particle.io)
+#ifdef ARDUINO_ARCH_AVR        // if using an arduino
+#include "I2cCharDisplay.h"
+#include "Wire.h"
+#elif ARDUINO_ARCH_SAM        // if using an arduino DUE
+#include "I2cCharDisplay.h"
+#include "Wire.h"
+#elif PARTICLE                 // if using a core, photon, or electron (by particle.io)
 #include "I2cCharDisplay/I2cCharDisplay.h"
-#else                           // if using something else
+#else                          // if using something else
 #endif
 
 #define LCDADDRESS     0x27                    // i2c address for the lcd display

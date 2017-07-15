@@ -12,7 +12,16 @@
     1.0.0 - 3/19/2016
       Original Release.
     1.0.1 - 4/6/2016
-      Modified the cursorMove() description.
+      Modified the cursorMove() function to start at (1,1) instead of (0,0).
+      Modified the cursorMove() function to work with OLED modules correctly.
+      Modified the home() function to work with the newly modified cursorMove().
+      Modified the oledBegin() function to work with the Newhaven OLED modules.
+    1.0.2 - 4/17/2017
+      Added a second class constructor (with additional parameter i2cPort),
+        so that the user could specify which i2c port to use (0 or 1)
+        Port 0 is the main i2c port using pins (SDA and SCL).
+        Port 1 is the aux i2c port using pins (SDA1 and SCL1, e.g. on an Arduino DUE board).
+        This adds support for the Arduino DUE board (using either of it's i2c ports).
 
     Short Description:
       This library works with Arduino and Particle (Photon, Electron, and Core)
@@ -68,10 +77,13 @@
 */
 
 
-#ifdef ARDUINO_ARCH_AVR        // if using an arduino and IDE is version 1.0 or higher
+#ifdef ARDUINO_ARCH_AVR        // if using an arduino
 #include "Arduino.h"
-#include <Wire.h>
-#elif SPARK                    // if using a core, photon, or electron (by particle.io)
+#include "Wire.h"
+#elif ARDUINO_ARCH_SAM        // if using an arduino DUE
+#include "Arduino.h"
+#include "Wire.h"
+#elif PARTICLE                 // if using a core, photon, or electron (by particle.io)
 #include "application.h"
 #else                          // if using something else
 #endif
@@ -142,7 +154,8 @@
 class I2cCharDisplay : public Print {       // parent class is Print, so that we can use the print functions
 public:
 
-  I2cCharDisplay(uint8_t displayType, uint8_t i2cAddress, uint8_t rows); // creates a display object
+  I2cCharDisplay(uint8_t displayType, uint8_t i2cAddress, uint8_t rows); // creates a display object when using the main i2c port (SDA and SCL pins)
+  I2cCharDisplay(uint8_t displayType, uint8_t i2cAddress, uint8_t rows, uint8_t i2cPort); // creates a display object where you can specify the i2c port to use (0 or 1) (port 1 is for the aux i2c port using SDA1 and SCL1 pins, e.g on an Arduino DUE board)
   void begin();                                                      // required to inialize the display. run this first!
   void clear();                                                      // clear the display and home the cursor to 1,1
   void home();                                                       // move the cursor to home position (1,1)
@@ -185,6 +198,8 @@ public:
 
 
 private:
+  void i2cWrite1(uint8_t data);   // write one byte to i2c bus, either i2cPort 0 or 1
+  void i2cWrite2(uint8_t data1, uint8_t data2);  // write 2 bytes to the i2c bus, either i2cPort 0 or 1
   void lcdBegin();               // used to initialize the lcd display
   void oledBegin();              // used to initialize the oled display
   void sendCommand(uint8_t);     // send a command to the display
@@ -203,6 +218,7 @@ private:
   uint8_t _lcdFunctionSetCommand;
 
   uint8_t _i2cAddress;
+  uint8_t _i2cPort;                 // 0 or 1, depending on which i2c port on the due is being used
   uint8_t _rows;                   // number of rows in the display (starting at 1)
   uint8_t _lcdBacklightControl;    // 0 if backlight is off, 0x08 is on
 };

@@ -16,6 +16,12 @@
       Modified the cursorMove() function to work with OLED modules correctly.
       Modified the home() function to work with the newly modified cursorMove().
       Modified the oledBegin() function to work with the Newhaven OLED modules.
+    1.0.2 - 4/17/2017
+      Added a second class constructor (with additional parameter i2cPort),
+        so that the user could specify which i2c port to use (0 or 1)
+        Port 0 is the main i2c port using pins (SDA and SCL).
+        Port 1 is the aux i2c port using pins (SDA1 and SCL1, e.g. on an Arduino DUE board).
+        This adds support for the Arduino DUE board (using either of it's i2c ports).
 
   Short Description:
     This library works with Arduino and Particle (Photon, Electron, and Core)
@@ -73,7 +79,10 @@
 
 #ifdef ARDUINO_ARCH_AVR        // if using an arduino
 #include "I2cCharDisplay.h"
-#elif SPARK                    // if using a core, photon, or electron (by particle.io)
+#define Wire1 Wire             // regular arduinos don't have a second i2c port, just redefine Wire1 to be Wire
+#elif ARDUINO_ARCH_SAM         // if using a arduino DUE
+#include "I2cCharDisplay.h"
+#elif PARTICLE                 // if using a core, photon, or electron (by particle.io)
 #include "I2cCharDisplay.h"
 #else                          // if using something else
 #endif
@@ -81,10 +90,23 @@
 
 
 // class constructors
+
+// use this constructor if using the main i2c port (pins SDA and SCL)
 I2cCharDisplay::I2cCharDisplay(uint8_t displayType, uint8_t i2cAddress, uint8_t rows)
 {
   _displayType         = displayType;
   _i2cAddress          = i2cAddress;
+  _i2cPort             = 0;
+  _rows                = rows;
+  _lcdBacklightControl = LCD_BACKLIGHTON;
+}
+
+// use this constructor if you want to specify which i2c port to use (0 or 1) (port 0 uses pins SDA and SCL, and port 1 uses pins SDA1 and SCL1, for example on an Arduino Due board)
+I2cCharDisplay::I2cCharDisplay(uint8_t displayType, uint8_t i2cAddress, uint8_t rows, uint8_t i2cPort)
+{
+  _displayType         = displayType;
+  _i2cAddress          = i2cAddress;
+  _i2cPort             = i2cPort;
   _rows                = rows;
   _lcdBacklightControl = LCD_BACKLIGHTON;
 }
@@ -95,6 +117,11 @@ I2cCharDisplay::I2cCharDisplay(uint8_t displayType, uint8_t i2cAddress, uint8_t 
 
 void I2cCharDisplay::begin()
 {
+  if (_i2cPort==0)
+    Wire.begin();   // init i2c
+  if (_i2cPort==1)
+    Wire1.begin();   // init the other i2c port
+
   switch (_displayType)
   {
   case LCD_TYPE:
@@ -295,18 +322,14 @@ void I2cCharDisplay::createCharacter(uint8_t address, uint8_t characterMap[])
 void I2cCharDisplay::backlightOff(void)
 {
   _lcdBacklightControl = LCD_BACKLIGHTOFF;
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(_lcdBacklightControl));
-  Wire.endTransmission();
+  i2cWrite1((int)(_lcdBacklightControl));
 }
 
 
 void I2cCharDisplay::backlightOn(void)
 {
   _lcdBacklightControl = LCD_BACKLIGHTON;
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(_lcdBacklightControl));
-  Wire.endTransmission();
+  i2cWrite1((int)(_lcdBacklightControl));
 }
 
 
@@ -374,6 +397,36 @@ void I2cCharDisplay::sendData(uint8_t value)
 }
 
 
+void I2cCharDisplay::i2cWrite1(uint8_t data){   // write one byte to i2c bus, either i2cPort 0 or 1
+  if (_i2cPort == 1) {
+    Wire1.beginTransmission(_i2cAddress);           // **** Start I2C
+    Wire1.write(data);
+    Wire1.endTransmission();                        // **** End I2C
+  }
+  else {
+    Wire.beginTransmission(_i2cAddress);           // **** Start I2C
+    Wire.write(data);
+    Wire.endTransmission();                        // **** End I2C
+  }
+}
+
+
+void I2cCharDisplay::i2cWrite2(uint8_t data1, uint8_t data2){  // write 2 bytes to the i2c bus, either i2cPort 0 or 1
+  if (_i2cPort == 1) {
+    Wire1.beginTransmission(_i2cAddress);           // **** Start I2C
+    Wire1.write(data1);
+    Wire1.write(data2);
+    Wire1.endTransmission();                        // **** End I2C
+  }
+  else {
+    Wire.beginTransmission(_i2cAddress);           // **** Start I2C
+    Wire.write(data1);
+    Wire.write(data2);
+    Wire.endTransmission();                        // **** End I2C
+  }
+}
+
+
 // sendCommand - send command to the display
 // value is what is sent
 void I2cCharDisplay::sendLcdCommand(uint8_t value)
@@ -389,18 +442,12 @@ void I2cCharDisplay::sendLcdCommand(uint8_t value)
   // write the 2 bytes of data to the display
   for (uint8_t i = 0; i < 2; ++i)
   {
-    Wire.beginTransmission(_i2cAddress);
-    Wire.write((int)(dataToSend[i]));
-    Wire.endTransmission();
+    i2cWrite1((int)(dataToSend[i]));
     // set the enable bit and write again
-    Wire.beginTransmission(_i2cAddress);
-    Wire.write((int)(dataToSend[i]) | LCD_ENABLEON);
-    Wire.endTransmission();
+    i2cWrite1((int)(dataToSend[i]) | LCD_ENABLEON);
     delayMicroseconds(1);               // hold enable high for 1us
     // clear the enable bit and write again
-    Wire.beginTransmission(_i2cAddress);
-    Wire.write((int)(dataToSend[i]) | LCD_ENABLEOFF);
-    Wire.endTransmission();
+    i2cWrite1((int)(dataToSend[i]) | LCD_ENABLEOFF);
     delayMicroseconds(1);           //
   }
 }
@@ -422,18 +469,12 @@ void I2cCharDisplay::sendLcdData(uint8_t value)
   // write the 2 bytes of data to the display
   for (uint8_t i = 0; i < 2; ++i)
   {
-    Wire.beginTransmission(_i2cAddress);
-    Wire.write((int)(dataToSend[i]));
-    Wire.endTransmission();
+    i2cWrite1((int)(dataToSend[i]));
     // set the enable bit and write again
-    Wire.beginTransmission(_i2cAddress);
-    Wire.write((int)(dataToSend[i]) | LCD_ENABLEON);
-    Wire.endTransmission();
+    i2cWrite1((int)(dataToSend[i]) | LCD_ENABLEON);
     delayMicroseconds(1);               // hold enable high for 1us
     // clear the enable bit and write again
-    Wire.beginTransmission(_i2cAddress);
-    Wire.write((int)(dataToSend[i]) | LCD_ENABLEOFF);
-    Wire.endTransmission();
+    i2cWrite1((int)(dataToSend[i]) | LCD_ENABLEOFF);
     delayMicroseconds(1);
   }
 }
@@ -441,20 +482,14 @@ void I2cCharDisplay::sendLcdData(uint8_t value)
 
 void I2cCharDisplay::sendOledCommand(uint8_t value)
 {
-  Wire.beginTransmission(_i2cAddress);           // **** Start I2C
-  Wire.write(OLED_COMMANDMODE);                  // **** Set OLED Command mode
-  Wire.write(value);
-  Wire.endTransmission();                        // **** End I2C
+  i2cWrite2(OLED_COMMANDMODE, value);
   delay(10);
 }
 
 
 void I2cCharDisplay::sendOledData(uint8_t value)
 {
-  Wire.beginTransmission(_i2cAddress);        // **** Start I2C
-  Wire.write(OLED_DATAMODE);                  // **** Set OLED Data mode
-  Wire.write(value);
-  Wire.endTransmission();                     // **** End I2C
+  i2cWrite2(OLED_DATAMODE, value);
 }
 
 
@@ -564,77 +599,51 @@ void I2cCharDisplay::lcdBegin()
 
   // set all of the outputs on the PCA8574 chip to 0, except the backlight bit if on
   data = _lcdBacklightControl;
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(data));
-  Wire.endTransmission();
+  i2cWrite1((int)(data));
   delay(1000);
 
   // put lcd in 4 bit mode
   data = 0x30 | _lcdBacklightControl;
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(data));
-  Wire.endTransmission();
+  i2cWrite1((int)(data));
   // set the enable bit and write again
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(data | LCD_ENABLEON));
-  Wire.endTransmission();
+  i2cWrite1((int)(data | LCD_ENABLEON));
   delayMicroseconds(1);                 // hold enable high for 1us
   // clear the enable bit and write again
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(data | LCD_ENABLEOFF));
-  Wire.endTransmission();
+  i2cWrite1((int)(data | LCD_ENABLEOFF));
   delayMicroseconds(1);
   delayMicroseconds(4300);  // wait min 4.1ms
 
   // put lcd in 4 bit mode again
   data = 0x30 | _lcdBacklightControl;
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(data));
-  Wire.endTransmission();
+  i2cWrite1((int)(data));
   // set the enable bit and write again
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(data | LCD_ENABLEON));
-  Wire.endTransmission();
+  i2cWrite1((int)(data | LCD_ENABLEON));
   delayMicroseconds(1);                 // hold enable high for 1us
   // clear the enable bit and write again
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(data | LCD_ENABLEOFF));
-  Wire.endTransmission();
+  i2cWrite1((int)(data | LCD_ENABLEOFF));
   delayMicroseconds(1);
   delayMicroseconds(4300);   // wait min 4.1ms
 
   // put lcd in 4 bit mode again
   data = 0x30 | _lcdBacklightControl;
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(data));
-  Wire.endTransmission();
+  i2cWrite1((int)(data));
   // set the enable bit and write again
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(data | LCD_ENABLEON));
-  Wire.endTransmission();
+  i2cWrite1((int)(data | LCD_ENABLEON));
   delayMicroseconds(1);                 // hold enable high for 1us
   // clear the enable bit and write again
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(data | LCD_ENABLEOFF));
-  Wire.endTransmission();
+  i2cWrite1((int)(data | LCD_ENABLEOFF));
   delayMicroseconds(1);
   delayMicroseconds(4300);   // wait min 4.1ms
 
 
   // set up 4 bit interface
   data = 0x20 | _lcdBacklightControl;
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(data));
-  Wire.endTransmission();
+  i2cWrite1((int)(data));
   // set the enable bit and write again
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(data | LCD_ENABLEON));
-  Wire.endTransmission();
+  i2cWrite1((int)(data | LCD_ENABLEON));
   delayMicroseconds(1);                 // hold enable high for 1us
   // clear the enable bit and write again
-  Wire.beginTransmission(_i2cAddress);
-  Wire.write((int)(data | LCD_ENABLEOFF));
-  Wire.endTransmission();
+  i2cWrite1((int)(data | LCD_ENABLEOFF));
   delayMicroseconds(1);
 
 
