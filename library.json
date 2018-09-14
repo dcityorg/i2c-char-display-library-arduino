@@ -4,21 +4,21 @@
   "description": "I2C LCD and OLED Display Library for Arduino",
   "authors":
   {
-	  "name": "Windy Hill Technology LLC",
-	  "email": "gary@wht.io",
-	  "url": "http://www.wht.io/",
+	  "name": "DCITY",
+	  "email": "gary@dcity.org",
+	  "url": "https://www.dcity.org/",
 	  "maintainer": true
   },
   "repository":
   {
     "type": "git",
-    "url": "https://github.com/wht-io/i2c-display-library.git"
+    "url": "https://github.com/dcityorg/i2c-char-display-library.git"
   },
-  "version": "1.0.2",
+  "version": "1.0.3",
   "examples": [
     "examples/*/*.ino"
   ],
-  "url": "https://www.wht.io/",
+  "url": "https://www.dcity.org/",
   "exclude": "extras",
   "frameworks": "arduino",
   "platforms": "*"

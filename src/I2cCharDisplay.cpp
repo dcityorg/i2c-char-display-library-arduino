@@ -6,9 +6,9 @@
 /*
   I2cCharDisplay.cpp
 
-  Written by: Gary Muhonen  gary@wht.io
+  Written by: Gary Muhonen  gary@dcity.org
 
-  versions
+  Versions
     1.0.0 - 3/19/2016
       Original Release.
     1.0.1 - 4/6/2016
@@ -22,61 +22,47 @@
         Port 0 is the main i2c port using pins (SDA and SCL).
         Port 1 is the aux i2c port using pins (SDA1 and SCL1, e.g. on an Arduino DUE board).
         This adds support for the Arduino DUE board (using either of it's i2c ports).
+    1.0.3 - 8/27/2018 Transfer to GM, and some minor changes
+        Added these OLED "fade display" functions (not very useful for some types of OLED displays)
+          void fadeOff();           // turns off the fade feature of the OLED
+          void fadeOnce(uint8_t);   // fade out the display to off (fade time 0-16) - (on some display types, it doesn't work very well. It takes the display to half brightness and then turns off display)
+          void fadeBlink(uint8_t);  // blinks the fade feature of the OLED (fade time 0-16) - (on some display types, it doesn't work very well. It takes the display to half brightness and then turns off display)
+
 
   Short Description:
-    This library works with Arduino and Particle (Photon, Electron, and Core)
-    microcontroller boards and it provides many functions to communicate with
-    OLED and LCD character display modules that use the I2C communication
-    protocol.
 
-    The library will work with **LCD** and **OLED** character displays
-    (e.g. 16x2, 20x2, 20x4, etc.). The LCD displays must use the the
-    HD44780 controller chip and have a I2C PCA8574 i/o expander chip
-    on a backpack board (which gives the display I2C capability).
-    OLED display modules must have the US2066 controller chip
-    (which has I2C built in).
+      These files provide a software library and demo program for the Arduino
+       and Particle microcontroller boards.
 
-    See the project details links below for installation and usage information.
+      The library files provide useful functions to make it easy
+      to communicate with OLED and LCD character
+      display modules that use the I2C communication protocol. The demo
+      program shows the usage of the functions in the library.
 
-    Github repositories:
-    * Arduino library files:  https://github.com/wht-io/i2c-char-display-arduino.git
-    * Particle library files: https://github.com/wht-io/i2c-char-display-particle.git
+      The library will work with **LCD** and **OLED** character displays
+      (e.g. 16x2, 20x2, 20x4, etc.). The LCD displays must use the the
+      HD44780 controller chip and have a I2C PCA8574 i/o expander chip
+      on a backpack board (which gives the display I2C capability).
+      OLED display modules must have the US2066 controller chip
+      (which has I2C built in). Backback boards are available and
+      details are in the link below.
 
-    Project Details:
 
-    * Library installation and usage: http://wht.io/portfolio/i2c-display-library/
-    * OLED hardware information for EastRising modules: http://wht.io/portfolio/i2c-oled-backpack-board-eastrising/
-    * OLED hardware information for Newhaven modules: http://wht.io/portfolio/i2c-oled-backpack-board-newhaven/
-    * LCD hardware information: http://wht.io/portfolio/i2c-lcd-backpack-board/
-*/
+  https://www.dcity.org/portfolio/i2c-display-library/
+  This link has details including:
+      * software library installation for use with Arduino, Particle and Raspberry Pi boards
+      * list of functions available in these libraries
+      * a demo program (which shows the usage of most library functions)
+      * info on OLED and LCD character displays that work with this software
+      * hardware design for a backpack board for LCDs and OLEDs, available on github
+      * info on backpack “bare” pc boards available from OSH Park.
 
-/*
-  Windy Hill Technology LLC code, firmware, and software is released under the
-  MIT License (http://opensource.org/licenses/MIT).
-
-  The MIT License (MIT)
-
-  Copyright (c) 2016 Windy Hill Technology LLC
-
-  Permission is hereby granted, free of charge, to any person obtaining a
-  copy of this software and associated documentation files (the "Software"),
-  to deal in the Software without restriction, including without limitation
-  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-  and/or sell copies of the Software, and to permit persons to whom the
-  Software is furnished to do so, subject to the following conditions:
-  The above copyright notice and this permission notice shall be included
-  in all copies or substantial portions of the Software.
-
-  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-  DEALINGS IN THE SOFTWARE.
+  License Information:  https://www.dcity.org/license-information/
 */
 
 
+
+// include files... some boards require different include files
 #ifdef ARDUINO_ARCH_AVR        // if using an arduino
 #include "I2cCharDisplay.h"
 #define Wire1 Wire             // regular arduinos don't have a second i2c port, just redefine Wire1 to be Wire
@@ -84,9 +70,13 @@
 #include "I2cCharDisplay.h"
 #elif PARTICLE                 // if using a core, photon, or electron (by particle.io)
 #include "I2cCharDisplay.h"
-#else                          // if using something else
+#define Wire1 Wire             // doesn't have a second i2c port, just redefine Wire1 to be Wire
+#elif defined(__MK20DX128__) || (__MK20DX256__) || (__MK20DX256__) || (__MK62FX512__) || (__MK66FX1M0__) // if using a teensy 3.0, 3.1, 3.2, 3.5, 3.6
+#include "I2cCharDisplay.h"
+#else                          // if using something else then this may work
+#include "I2cCharDisplay.h"
+#define Wire1 Wire             // regular arduinos don't have a second i2c port, just redefine Wire1 to be Wire
 #endif
-
 
 
 // class constructors
@@ -352,6 +342,64 @@ void I2cCharDisplay::setBrightness(uint8_t value)
   sendCommand(0x80);        // set RE=0
   sendCommand(0x28);
 }
+
+// Set the oled fade out feature to OFF
+void I2cCharDisplay::fadeOff()
+{
+  sendCommand(0x80);        // set RE=1
+  sendCommand(0x2A);
+
+  sendCommand(0x80);        // set SD=1
+  sendCommand(0x79);
+
+  sendCommand(OLED_SETFADECOMMAND);
+  sendCommand(OLED_FADEOFF);                     // set fade feature to OFF
+
+  sendCommand(0x80);        // set SD=0
+  sendCommand(0x78);
+
+  sendCommand(0x80);        // set RE=0
+  sendCommand(0x28);
+}
+
+// Set the oled fade out feature to ON (value is the rate of fade 0-15)
+void I2cCharDisplay::fadeOnce(uint8_t value)
+{
+  sendCommand(0x80);        // set RE=1
+  sendCommand(0x2A);
+
+  sendCommand(0x80);        // set SD=1
+  sendCommand(0x79);
+
+  sendCommand(OLED_SETFADECOMMAND);
+  sendCommand(OLED_FADEON | (0x0f & value));      // set fade feature to ON with a delay interval of value
+
+  sendCommand(0x80);        // set SD=0
+  sendCommand(0x78);
+
+  sendCommand(0x80);        // set RE=0
+  sendCommand(0x28);
+}
+
+// Set the oled fade out feature to BLINK (value is the rate of fade 0-15)
+void I2cCharDisplay::fadeBlink(uint8_t value)
+{
+  sendCommand(0x80);        // set RE=1
+  sendCommand(0x2A);
+
+  sendCommand(0x80);        // set SD=1
+  sendCommand(0x79);
+
+  sendCommand(OLED_SETFADECOMMAND);
+  sendCommand(OLED_FADEBLINK | (0x0f & value));      // set fade feature to BLINK with a delay interval of value
+
+  sendCommand(0x80);        // set SD=0
+  sendCommand(0x78);
+
+  sendCommand(0x80);        // set RE=0
+  sendCommand(0x28);
+}
+
 
 
 

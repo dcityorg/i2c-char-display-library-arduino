@@ -30,6 +30,12 @@ displayRightToLeft	KEYWORD2
 displayShiftOn	KEYWORD2
 displayShiftOff	KEYWORD2
 createCharacter	KEYWORD2
+backlightOn	KEYWORD2
+backlightOff KEYWORD2
+setBrightness	KEYWORD2
+fadeOff	KEYWORD2
+fadeOnce KEYWORD2
+fadeBlink	KEYWORD2
 ###########################################
 # Constants (LITERAL1)
 ###########################################

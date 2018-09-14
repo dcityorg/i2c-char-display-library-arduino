@@ -6,9 +6,9 @@
 /*
   I2cCharDisplayDemo.ino
 
-  Written by: Gary Muhonen  gary@wht.io
+  Written by: Gary Muhonen  gary@dcity.org
 
-  versions
+  Versions
     1.0.0 - 3/19/2016
       Original release.
     1.0.1 - 4/6/2016
@@ -22,50 +22,66 @@
         Port 0 is the main i2c port using pins (SDA and SCL).
         Port 1 is the aux i2c port using pins (SDA1 and SCL1, e.g. on an Arduino DUE board).
         This adds support for the Arduino DUE board (using either of it's i2c ports).
+    1.0.3 - 8/27/2018 Transfer to GM, and some minor changes
+        Added these OLED "fade display" functions (not very useful for some types of OLED displays)
+          void fadeOff();           // turns off the fade feature of the OLED
+          void fadeOnce(uint8_t);   // fade out the display to off (fade time 0-16) - (on some display types, it doesn't work very well. It takes the display to half brightness and then turns off display)
+          void fadeBlink(uint8_t);  // blinks the fade feature of the OLED (fade time 0-16) - (on some display types, it doesn't work very well. It takes the display to half brightness and then turns off display)
 
   Short Description:
-    This demo program works with Arduino and Particle (Photon, Electron, and Core)
-    microcontroller boards and it tests features in the I2cCharDisplay library
-    (which contains many functions to communicate with OLED and LCD character
-    display modules that use the I2C communication protocol).
 
-    The library will work with **LCD** and **OLED** character displays
-    (e.g. 16x2, 20x2, 20x4, etc.). The LCD displays must use the the
-    HD44780 controller chip and have a I2C PCA8574 i/o expander chip
-    on a backpack board (which gives the display I2C capability).
-    OLED display modules must have the US2066 controller chip
-    (which has I2C built in).
+      These files provide a software library and demo program for the Arduino
+      and Particle microcontroller boards.
 
-    See the project details links below for installation and usage information.
+      The library files provide useful functions to make it easy
+      to communicate with OLED and LCD character
+      display modules that use the I2C communication protocol. The demo
+      program shows the usage of the functions in the library.
 
-    Github repositories:
-    * Arduino library files:  https://github.com/wht-io/i2c-char-display-arduino.git
-    * Particle library files: https://github.com/wht-io/i2c-char-display-particle.git
+      The library will work with **LCD** and **OLED** character displays
+      (e.g. 16x2, 20x2, 20x4, etc.). The LCD displays must use the the
+      HD44780 controller chip and have a I2C PCA8574 i/o expander chip
+      on a backpack board (which gives the display I2C capability).
+      OLED display modules must have the US2066 controller chip
+      (which has I2C built in). Backback boards are available and
+      details are in the link below.
 
-    Project Details:
 
-    * Library installation and usage: http://wht.io/portfolio/i2c-display-library/
-    * OLED hardware information for EastRising modules: http://wht.io/portfolio/i2c-oled-backpack-board-eastrising/
-    * OLED hardware information for Newhaven modules: http://wht.io/portfolio/i2c-oled-backpack-board-newhaven/
-    * LCD hardware information: http://wht.io/portfolio/i2c-lcd-backpack-board/
-*/
+  https://www.dcity.org/portfolio/i2c-display-library/
+  This link has details including:
+      * software library installation for use with Arduino, Particle and Raspberry Pi boards
+      * list of functions available in these libraries
+      * a demo program (which shows the usage of most library functions)
+      * info on OLED and LCD character displays that work with this software
+      * hardware design for a backpack board for LCDs and OLEDs, available on github
+      * info on backpack “bare” pc boards available from OSH Park.
 
-/*
+
   This demo program is public domain. You may use it for any purpose.
-  NO WARRANTY IS IMPLIED.
+    NO WARRANTY IS IMPLIED.
+
+  License Information:  https://www.dcity.org/license-information/
 */
 
 
-#ifdef ARDUINO_ARCH_AVR        // if using an arduino
+// include files... some boards require different include files
+#ifdef ARDUINO_ARCH_AVR         // if using an arduino
 #include "I2cCharDisplay.h"
 #include "Wire.h"
 #elif ARDUINO_ARCH_SAM        // if using an arduino DUE
 #include "I2cCharDisplay.h"
 #include "Wire.h"
-#elif PARTICLE                 // if using a core, photon, or electron (by particle.io)
-#include "I2cCharDisplay/I2cCharDisplay.h"
-#else                          // if using something else
+#elif PARTICLE                     // if using a core, photon, or electron (by particle.io)
+#include "I2cCharDisplay/I2cCharDisplay.h"  // use this if the library files are in the particle repository of libraries
+//#include "I2cCharDisplay.h"     // use this if the library files are in the same folder as this demo program
+#elif defined(__MK20DX128__) || (__MK20DX256__) || (__MK20DX256__) || (__MK62FX512__) || (__MK66FX1M0__) // if using a teensy 3.0, 3.1, 3.2, 3.5, 3.6
+#include "I2cCharDisplay.h"
+#include "Wire.h"
+#else                           // if using something else then this may work
+#include "I2cCharDisplay.h"
+#include "Wire.h"
 #endif
+
 
 #define LCDADDRESS     0x27                    // i2c address for the lcd display
 #define OLEDADDRESS    0x3c                    // i2c address for the oled display
@@ -78,6 +94,9 @@
 
 I2cCharDisplay lcd(LCD_TYPE, LCDADDRESS, 2);    // create an lcd object for a 2 line display
 I2cCharDisplay oled(OLED_TYPE, OLEDADDRESS, 2); // create an oled object for a 2 line display
+// If you are using a microcontroller with two I2C ports (like the Arduino DUE), you can specify the I2C port to use (0 or 1)
+//     with this constructor. The 4th parameter is the I2C port to use (o or 1).
+//     I2cCharDisplay oled(OLED_TYPE, OLEDADDRESS, 2, 1); // create an oled object for a 2 line display, using the 2nd I2C port (specified as 1 in this example)
 
 void setup()
 {
@@ -497,6 +516,57 @@ void loop()
   oled.print(j, DEC);
   delay(2000);
   }
+
+  // test the oled fade mode = blink (display will fade down in brightness, blink, and come up in brightness... then repeat)
+  //      In my opinion this feature is not that useful, but I provided it because the OLED is capable of it.
+  // test the lcd backlight on/off
+  // Note: Fade mode is not very useful for some displays, as some displays will fade in brightness to about 50% and then turn off.
+  for (uint8_t i = 0; i < TESTNUM; ++i)
+  //delay(2000);
+  {
+    lcd.clear();
+    oled.clear();
+    lcd.backlightOn();
+    lcd.print("Backlight On");
+    oled.fadeOff();
+    oled.print("Fade Mode = Off");
+    delay(2000);
+    lcd.clear();
+    oled.clear();
+    lcd.print("Backlight Off");
+    lcd.backlightOff();
+    oled.print("Fade Mode = Blink");
+    oled.fadeBlink(0);   // fade the oled with a delay of 0 (valid values are 0-15). You must use fadeOff() to turn off blink mode.
+    delay(10000);
+  }
+  lcd.print("Backlight On");
+  oled.fadeOff();
+
+
+
+  // test the oled fade mode = once (display will fade down in brightness, and then turn off)
+  //      In my opinion this feature is not that useful, but I provided it because the OLED is capable of it.
+  // test the lcd backlight on/off
+  // Note: Fade mode is not very useful for some displays, as some displays will fade in brightness to about 50% and then turn off.
+  for (uint8_t i = 0; i < TESTNUM; ++i)
+  {
+    lcd.clear();
+    oled.clear();
+    lcd.backlightOn();
+    lcd.print("Backlight On");
+    oled.fadeOff();
+    oled.print("Fade Mode = Off");
+    delay(2000);
+    lcd.clear();
+    oled.clear();
+    lcd.print("Backlight Off");
+    lcd.backlightOff();
+    oled.print("Fade Mode = Once");
+    oled.fadeOnce(4);  // fade out the oled once with a delay of 4 (valid values are 0-15). You must use fadeOff() to turn display on again.
+    delay(8000);
+  }
+  lcd.print("Backlight On");
+  oled.fadeOff();
 
 
 }
